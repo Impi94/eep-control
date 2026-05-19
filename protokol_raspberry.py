@@ -732,9 +732,9 @@ if __name__ == "__main__":
         if snap:
             _print_snapshot(snap)
 
-        # 4. Мониторинг симулированного процесса
-        print("\nМониторинг (10с симуляции, Ctrl+C для остановки):")
-        m.monitor(duration_s=10, interval_s=1.0)
+        # 4. Мониторинг симулированного процесса (бесконечно, Ctrl+C для остановки)
+        print("\nМониторинг симуляции (Ctrl+C для остановки):")
+        m.monitor(duration_s=0, interval_s=1.0)
 
         # 5. Выключить симуляцию
         m.set_simulation(False)
