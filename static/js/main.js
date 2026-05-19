@@ -1,761 +1,306 @@
-/* ============================================================
-   EEP Control
-   ============================================================ */
-
-:root {
-    --bg-base:       #121218;
-    --bg-surface:    #1e1e2d;
-    --bg-card:       #252536;
-    --bg-input:      #2a2a3d;
-    --bg-hover:      #32324a;
-    
-    --text-primary:  #e1e1e6;
-    --text-secondary:#8888a0;
-    --text-dim:      #55556a;
-    
-    --accent:        #4fc3f7;
-    --accent-dim:    rgba(79, 195, 247, 0.15);
-    --success:       #66bb6a;
-    --success-dim:   rgba(102, 187, 106, 0.15);
-    --warning:       #ffa726;
-    --warning-dim:   rgba(255, 167, 38, 0.15);
-    --danger:        #ef5350;
-    --danger-dim:    rgba(239, 83, 80, 0.15);
-    
-    --border:        #2d2d42;
-    --border-light:  #3a3a52;
-    
-    --radius:        6px;
-    --radius-lg:     10px;
-    --shadow:        0 2px 8px rgba(0,0,0,0.4);
-    --transition:    150ms ease;
-    
-    --topbar-h:      48px;
-    --sidebar-w:     320px;
-    --sidebar-r-w:   300px;
-}
-
-/* ============ СБРОС ============ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background: var(--bg-base);
-    color: var(--text-primary);
-    font-size: 14px;
-    line-height: 1.5;
-    overflow: hidden;
-    height: 100vh;
-}
-
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-
-/* ============ ВЕРХНЯЯ ПАНЕЛЬ ============ */
-.topbar {
-    height: var(--topbar-h);
-    background: var(--bg-surface);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 16px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-}
-
-.topbar-left {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--accent);
-}
-
-.logo-icon {
-    width: 22px;
-    height: 22px;
-}
-
-.logo-text {
-    font-weight: 700;
-    font-size: 16px;
-    letter-spacing: 0.5px;
-}
-
-.topbar-subtitle {
-    color: var(--text-dim);
-    font-size: 12px;
-}
-
-.topbar-center {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.state-badge {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 16px;
-    border-radius: 20px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.state-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--text-dim);
-}
-
-.state-badge.idle .state-dot { background: var(--text-secondary); }
-.state-badge.ready .state-dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-.state-badge.running .state-dot { background: var(--success); box-shadow: 0 0 8px var(--success); animation: pulse 1s infinite; }
-.state-badge.paused .state-dot { background: var(--warning); animation: pulse 2s infinite; }
-.state-badge.error .state-dot,
-.state-badge.e-stop .state-dot { background: var(--danger); box-shadow: 0 0 12px var(--danger); animation: pulse 0.5s infinite; }
-.state-badge.finishing .state-dot { background: var(--accent); animation: pulse 1.5s infinite; }
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-}
-
-.topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.topbar-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    font-size: 12px;
-    line-height: 1.3;
-}
-
-.topbar-info .label {
-    color: var(--text-dim);
-    font-size: 10px;
-    text-transform: uppercase;
-}
-
-.connection-indicator {
-    display: flex;
-    align-items: center;
-}
-
-.conn-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--warning);
-    transition: var(--transition);
-}
-
-.conn-dot.connected { background: var(--success); }
-.conn-dot.disconnected { background: var(--danger); }
-
-
-/* ============ АВАРИЙНАЯ КНОПКА ============ */
-.emergency-btn {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 200;
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: var(--danger);
-    border: 4px solid #ff8a80;
-    color: white;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    box-shadow: 0 4px 20px rgba(239, 83, 80, 0.5);
-    transition: var(--transition);
-}
-
-.emergency-btn svg {
-    width: 28px;
-    height: 28px;
-}
-
-.emergency-btn span {
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 1px;
-}
-
-.emergency-btn:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 30px rgba(239, 83, 80, 0.7);
-}
-
-.emergency-btn:active {
-    transform: scale(0.95);
-}
-
-
-/* ============ ОСНОВНОЙ LAYOUT ============ */
-.layout {
-    display: flex;
-    margin-top: var(--topbar-h);
-    height: calc(100vh - var(--topbar-h));
-}
-
-.sidebar {
-    width: var(--sidebar-w);
-    min-width: var(--sidebar-w);
-    background: var(--bg-surface);
-    border-right: 1px solid var(--border);
-    overflow-y: auto;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.main-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.sidebar-right {
-    width: var(--sidebar-r-w);
-    min-width: var(--sidebar-r-w);
-    background: var(--bg-surface);
-    border-left: 1px solid var(--border);
-    overflow-y: auto;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-
-/* ============ ПАНЕЛИ ============ */
-.panel {
-    background: var(--bg-card);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-    overflow: hidden;
-}
-
-.panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 14px;
-    background: var(--bg-surface);
-    border-bottom: 1px solid var(--border);
-}
-
-.panel-header h3 {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.panel-body {
-    padding: 14px;
-}
-
-
-/* ============ КНОПКИ УПРАВЛЕНИЯ ============ */
-.control-buttons {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-.ctrl-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 12px 8px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg-input);
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: var(--transition);
-    font-size: 11px;
-    font-weight: 600;
-}
-
-.ctrl-btn svg {
-    width: 20px;
-    height: 20px;
-}
-
-.ctrl-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-.ctrl-btn.start:not(:disabled):hover {
-    background: var(--success-dim);
-    border-color: var(--success);
-    color: var(--success);
-}
-
-.ctrl-btn.pause:not(:disabled):hover {
-    background: var(--warning-dim);
-    border-color: var(--warning);
-    color: var(--warning);
-}
-
-.ctrl-btn.stop:not(:disabled):hover {
-    background: var(--danger-dim);
-    border-color: var(--danger);
-    color: var(--danger);
-}
-
-
-/* ============ ПРОГРЕСС ============ */
-.progress-section {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.progress-header {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    color: var(--text-secondary);
-}
-
-.progress-track {
-    height: 6px;
-    background: var(--bg-input);
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.progress-bar {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, var(--accent), var(--success));
-    border-radius: 3px;
-    transition: width 0.3s ease;
-}
-
-.progress-time {
-    font-size: 12px;
-    color: var(--text-dim);
-}
-
-
-/* ============ ПРЕСЕТЫ ============ */
-.preset-buttons {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-}
-
-.preset-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 12px 8px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg-input);
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: var(--transition);
-    font-size: 12px;
-}
-
-.preset-btn:hover {
-    background: var(--bg-hover);
-    border-color: var(--accent);
-}
-
-.preset-btn.active {
-    background: var(--accent-dim);
-    border-color: var(--accent);
-    color: var(--accent);
-}
-
-.preset-icon {
-    font-size: 20px;
-}
-
-.preset-name {
-    font-weight: 600;
-    font-size: 11px;
-}
-
-
-/* ============ ПАРАМЕТРЫ (СЛАЙДЕРЫ) ============ */
-.param-group {
-    margin-bottom: 14px;
-}
-
-.param-label {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 6px;
-    font-size: 12px;
-    color: var(--text-secondary);
-}
-
-.param-value {
-    color: var(--accent);
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-}
-
-.param-slider {
-    width: 100%;
-    height: 4px;
-    -webkit-appearance: none;
-    appearance: none;
-    background: var(--bg-input);
-    border-radius: 2px;
-    outline: none;
-    cursor: pointer;
-}
-
-.param-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--accent);
-    border: 2px solid var(--bg-card);
-    box-shadow: 0 0 6px rgba(79, 195, 247, 0.4);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.param-slider::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
-    box-shadow: 0 0 12px rgba(79, 195, 247, 0.6);
-}
-
-.btn-apply {
-    width: 100%;
-    padding: 8px;
-    background: var(--accent-dim);
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 12px;
-    transition: var(--transition);
-    margin-top: 4px;
-}
-
-.btn-apply:hover {
-    background: var(--accent);
-    color: var(--bg-base);
-}
-
-
-/* ============ главные показатели ============ */
-.gauges-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-}
-
-.gauge-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.gauge-card.primary {
-    border-color: var(--border-light);
-}
-
-.gauge-label {
-    font-size: 11px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 600;
-}
-
-.gauge-value {
-    display: flex;
-    align-items: baseline;
-    gap: 4px;
-}
-
-.gauge-value span:first-child {
-    font-size: 32px;
-    font-weight: 700;
-    color: var(--text-primary);
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-}
-
-.gauge-unit {
-    font-size: 14px;
-    color: var(--text-dim);
-    font-weight: 400;
-}
-
-.gauge-bar-wrap {
-    height: 4px;
-    background: var(--bg-input);
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.gauge-bar {
-    height: 100%;
-    width: 0%;
-    border-radius: 2px;
-    transition: width 0.2s ease;
-}
-
-.gauge-bar.voltage { background: var(--accent); }
-.gauge-bar.current { background: #ab47bc; }
-.gauge-bar.gap { background: var(--success); }
-.gauge-bar.temp { background: var(--warning); }
-
-.gauge-target {
-    font-size: 11px;
-    color: var(--text-dim);
-}
-
-
-/* ============ МЕТРИКИ (вторичные) ============ */
-.metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 10px;
-}
-
-.metric-tile {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.metric-icon {
-    font-size: 20px;
-    flex-shrink: 0;
-}
-
-.metric-data {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.metric-val {
-    font-size: 18px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    color: var(--text-primary);
-    line-height: 1.2;
-}
-
-.metric-label {
-    font-size: 10px;
-    color: var(--text-dim);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-
-/* ============ СТАТИСТИКА ============ */
-.stats-panel {
-    flex-shrink: 0;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 12px;
-}
-
-.stat-item {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.stat-label {
-    font-size: 10px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-}
-
-.stat-value {
-    font-size: 16px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-}
-
-.stat-value.warn {
-    color: var(--warning);
-}
-
-
-/* ============ ЖУРНАЛ ============ */
-.log-panel {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-}
-
-.log-panel .panel-body {
-    flex: 1;
-    overflow: hidden;
-    padding: 0;
-}
-
-.log-container {
-    height: 100%;
-    overflow-y: auto;
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.log-entry {
-    padding: 4px 8px;
-    border-radius: 3px;
-    font-size: 11px;
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    display: flex;
-    gap: 8px;
-    line-height: 1.4;
-}
-
-.log-time {
-    color: var(--text-dim);
-    flex-shrink: 0;
-}
-
-.log-msg {
-    word-break: break-word;
-}
-
-.log-entry.info { color: var(--text-secondary); }
-.log-entry.warning { color: var(--warning); background: var(--warning-dim); }
-.log-entry.error { color: var(--danger); background: var(--danger-dim); }
-
-
-/* ============ ОШИБКИ ============ */
-.errors-panel {
-    max-height: 200px;
-}
-
-.errors-container {
-    max-height: 140px;
-    overflow-y: auto;
-}
-
-.no-errors {
-    text-align: center;
-    color: var(--text-dim);
-    font-size: 12px;
-    padding: 16px;
-}
-
-.error-entry {
-    padding: 6px 8px;
-    background: var(--danger-dim);
-    border-radius: 3px;
-    margin-bottom: 4px;
-    font-size: 11px;
-    border-left: 3px solid var(--danger);
-}
-
-.error-code {
-    color: var(--danger);
-    font-weight: 700;
-}
-
-
-/* ============ МЕЛКИЕ КНОПКИ ============ */
-.btn-small {
-    padding: 3px 10px;
-    font-size: 10px;
-    border-radius: 3px;
-    border: 1px solid var(--border);
-    background: var(--bg-input);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.btn-small:hover {
-    background: var(--bg-hover);
-    border-color: var(--text-dim);
-}
-
-.btn-small.danger:hover {
-    background: var(--danger-dim);
-    border-color: var(--danger);
-    color: var(--danger);
-}
-
-
-/* ============ АДАПТИВНОСТЬ ============ */
-@media (max-width: 1400px) {
-    .metrics-grid { grid-template-columns: repeat(3, 1fr); }
-    .stats-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-@media (max-width: 1200px) {
-    .sidebar-right { display: none; }
-    .gauges-row { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 900px) {
-    .sidebar { display: none; }
-    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+/* EEP Control — main.js */
+
+const socket = io();
+let currentState = 'idle';
+let _sliderDragging = false;
+let _lastLogTs = 0;
+
+// ── WebSocket ────────────────────────────────────────────────────────────────
+
+socket.on('connect', () => {
+    connDot('connected');
+    socket.emit('request_state');
+    fetchLog();
+});
+
+socket.on('disconnect', () => connDot('disconnected'));
+
+socket.on('state_update', applyState);
+
+socket.on('telemetry', data => {
+    applyState(data);
+    if (data.system) applySystem(data.system);
+});
+
+// ── Состояние ────────────────────────────────────────────────────────────────
+
+const STATE_LABELS = {
+    idle: 'Простой', ready: 'Готов', running: 'Работает',
+    paused: 'Пауза', finishing: 'Завершение',
+    error: 'Ошибка', 'e-stop': 'E-STOP', homing: 'Хоминг'
+};
+
+function applyState(data) {
+    if (!data) return;
+    currentState = data.state;
+
+    // Бейдж состояния
+    const badge = document.getElementById('stateBadge');
+    badge.className = 'state-badge ' + data.state;
+    badge.querySelector('.state-text').textContent = STATE_LABELS[data.state] || data.state;
+
+    // Кнопки управления
+    const running  = data.state === 'running';
+    const idle     = data.state === 'idle';
+    const paused   = data.state === 'paused';
+    const estop    = data.state === 'e-stop' || data.state === 'error';
+    const busy     = data.state === 'finishing' || data.state === 'homing';
+
+    const btnStart = document.getElementById('btnStart');
+    const btnPause = document.getElementById('btnPause');
+    const btnStop  = document.getElementById('btnStop');
+
+    btnStart.disabled = running || busy;
+    btnPause.disabled = !running;
+    btnStop.disabled  = idle || estop || busy;
+
+    // На паузе — кнопка «Старт» становится «Продолжить»
+    btnStart.querySelector('.btn-label').textContent = paused ? 'Продолжить' : 'Старт';
+
+    // Датчики
+    if (data.sensors) {
+        const s = data.sensors;
+        const pulse = data.pulse || {};
+        const proc  = data.process || {};
+
+        setGauge('vActual',   'vBar',      s.voltage_actual,        pulse.voltage || 300, 1);
+        setGauge('iActual',   'iBar',      s.current_actual,         pulse.current || 50,  2);
+        setGauge('gapActual', 'gapBar',    s.gap_actual,             1.0,                  3);
+        setGauge('elTemp',    'elTempBar', s.electrolyte_temp,       60,                   1);
+
+        setText('vTarget',   pulse.voltage);
+        setText('iTarget',   pulse.current);
+        setText('gapTarget', proc.gap);
+
+        setText('flowRate',     s.electrolyte_flow.toFixed(1));
+        setText('conductivity', s.electrolyte_conductivity.toFixed(1));
+        setText('vibration',    s.vibration.toFixed(2));
+        setText('tankLevel',    s.tank_level.toFixed(0));
+        setText('electrodeWear', s.electrode_wear.toFixed(2));
+        setText('energyConsumed', (data.stats || {}).energy_consumed
+            ? data.stats.energy_consumed.toFixed(2) : '0.00');
+    }
+
+    // Статистика
+    if (data.stats) {
+        const st = data.stats;
+        setText('pulseCount',      st.pulse_count.toLocaleString('ru'));
+        setText('materialRemoved', st.material_removed.toFixed(3));
+        setText('shortCircuits',   st.short_circuits);
+        setText('arcCount',        st.arc_count);
+        setText('efficiency',      st.efficiency.toFixed(1) + ' %');
+        setText('elapsedTime',     formatTime(st.elapsed_seconds));
+
+        const pct = st.progress || 0;
+        document.getElementById('progressBar').style.width = pct + '%';
+        setText('progressPercent', pct.toFixed(1) + '%');
+    }
+
+    // Синхронизация слайдеров с сервером (пока не тащим)
+    if (data.pulse && !_sliderDragging) syncSliders(data.pulse);
+
+    // Ошибки
+    if (Array.isArray(data.errors)) updateErrors(data.errors);
+
+    // Индикатор железо/симуляция
+    const hwBadge = document.getElementById('hwBadge');
+    if (hwBadge) {
+        const isHw = data.hw_connected;
+        hwBadge.textContent = isHw ? '● Железо' : '○ Симуляция';
+        hwBadge.style.color = isHw ? 'var(--success)' : 'var(--warning)';
+    }
+}
+
+// ── Системная информация RPi ─────────────────────────────────────────────────
+
+function applySystem(sys) {
+    setText('sysCpu',  (sys.cpu_percent || 0).toFixed(0) + '%');
+    setText('sysTemp', sys.cpu_temp != null ? sys.cpu_temp.toFixed(1) + '°C' : '--°C');
+}
+
+// ── Журнал (опрос раз в секунду) ────────────────────────────────────────────
+
+async function fetchLog() {
+    try {
+        const r = await fetch('/api/log?limit=200');
+        if (!r.ok) return;
+        const entries = await r.json();
+        const fresh = entries.filter(e => e.timestamp > _lastLogTs);
+        if (!fresh.length) return;
+        _lastLogTs = fresh[fresh.length - 1].timestamp;
+        appendLogEntries(fresh);
+    } catch (_) {}
+}
+
+function appendLogEntries(entries) {
+    const box = document.getElementById('logContainer');
+    // Убрать заглушку при первом реальном сообщении
+    const placeholder = box.querySelector('.log-placeholder');
+    if (placeholder) placeholder.remove();
+
+    entries.forEach(e => {
+        const div = document.createElement('div');
+        div.className = 'log-entry ' + (e.level || 'info');
+        div.innerHTML =
+            `<span class="log-time">${e.time}</span>` +
+            `<span class="log-msg">${esc(e.message)}</span>`;
+        box.appendChild(div);
+    });
+
+    box.scrollTop = box.scrollHeight;
+
+    // Ограничение DOM — 200 строк
+    while (box.children.length > 200) box.removeChild(box.firstChild);
+}
+
+setInterval(fetchLog, 1000);
+
+// ── Команды управления ───────────────────────────────────────────────────────
+
+async function controlAction(action) {
+    // На паузе Старт = Возобновить
+    if (action === 'start' && currentState === 'paused') action = 'resume';
+
+    try {
+        const r = await fetch('/api/control', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ action })
+        });
+        const res = await r.json();
+        if (!res.success) console.warn('[control]', res.error);
+    } catch (e) {
+        console.error('[control] fetch error', e);
+    }
+}
+
+function emergencyStop() { controlAction('emergency_stop'); }
+function resetErrors()   { controlAction('reset_errors'); }
+
+// ── Параметры импульсов ──────────────────────────────────────────────────────
+
+const SLIDER_DEFS = {
+    voltage:   { displayId: 'voltageDisplay',  suffix: ' В' },
+    current:   { displayId: 'currentDisplay',  suffix: ' А' },
+    pulse_on:  { displayId: 'pulseOnDisplay',  suffix: ' мкс' },
+    pulse_off: { displayId: 'pulseOffDisplay', suffix: ' мкс' },
+};
+
+function updateParam(param, rawValue) {
+    _sliderDragging = true;
+    const def = SLIDER_DEFS[param];
+    if (def) setText(def.displayId, parseFloat(rawValue) + def.suffix);
+    clearTimeout(updateParam._t);
+    updateParam._t = setTimeout(() => { _sliderDragging = false; }, 600);
+}
+
+async function applyPulseParams() {
+    const params = {
+        voltage:   parseFloat(document.getElementById('voltageSlider').value),
+        current:   parseFloat(document.getElementById('currentSlider').value),
+        pulse_on:  parseFloat(document.getElementById('pulseOnSlider').value),
+        pulse_off: parseFloat(document.getElementById('pulseOffSlider').value),
+    };
+    await fetch('/api/params/pulse', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(params)
+    });
+}
+
+function syncSliders(pulse) {
+    const map = {
+        voltageSlider:  [pulse.voltage,   'voltageDisplay',  ' В'],
+        currentSlider:  [pulse.current,   'currentDisplay',  ' А'],
+        pulseOnSlider:  [pulse.pulse_on,  'pulseOnDisplay',  ' мкс'],
+        pulseOffSlider: [pulse.pulse_off, 'pulseOffDisplay', ' мкс'],
+    };
+    Object.entries(map).forEach(([sliderId, [val, dispId, sfx]]) => {
+        const slider = document.getElementById(sliderId);
+        if (slider) slider.value = val;
+        setText(dispId, val + sfx);
+    });
+}
+
+// ── Пресеты ──────────────────────────────────────────────────────────────────
+
+async function loadPreset(name, btn) {
+    const r = await fetch('/api/preset/' + name, { method: 'POST' });
+    const res = await r.json();
+    if (res.success) {
+        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+    }
+}
+
+// ── Ошибки ───────────────────────────────────────────────────────────────────
+
+function updateErrors(errors) {
+    const box = document.getElementById('errorsContainer');
+    if (!errors.length) {
+        box.innerHTML = '<div class="no-errors">Ошибок нет</div>';
+        return;
+    }
+    box.innerHTML = errors.map(e =>
+        `<div class="error-entry">
+            <span class="error-code">${esc(e.code)}</span>
+            <span class="error-time" style="color:var(--text-dim);margin-left:6px">${e.time}</span>
+            <div style="margin-top:2px">${esc(e.message)}</div>
+        </div>`
+    ).join('');
+}
+
+// ── Очистка журнала ──────────────────────────────────────────────────────────
+
+function clearLog() {
+    const box = document.getElementById('logContainer');
+    box.innerHTML = '<div class="log-placeholder log-entry info">' +
+        '<span class="log-time">--:--</span>' +
+        '<span class="log-msg">Журнал очищен</span></div>';
+    _lastLogTs = Date.now() / 1000;
+}
+
+// ── Часы ─────────────────────────────────────────────────────────────────────
+
+function tickClock() {
+    const now = new Date();
+    setText('clockDisplay',
+        String(now.getHours()).padStart(2,'0') + ':' +
+        String(now.getMinutes()).padStart(2,'0') + ':' +
+        String(now.getSeconds()).padStart(2,'0')
+    );
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+// ── Утилиты ──────────────────────────────────────────────────────────────────
+
+function setGauge(valueId, barId, value, max, decimals) {
+    const v = value ?? 0;
+    setText(valueId, v.toFixed(decimals));
+    const bar = document.getElementById(barId);
+    if (bar) bar.style.width = Math.min(100, Math.max(0, (v / max) * 100)).toFixed(1) + '%';
+}
+
+function setText(id, text) {
+    const el = document.getElementById(id);
+    if (el && text !== undefined && text !== null) el.textContent = text;
+}
+
+function connDot(cls) {
+    const dot = document.querySelector('.conn-dot');
+    if (dot) dot.className = 'conn-dot ' + cls;
+}
+
+function formatTime(sec) {
+    sec = sec || 0;
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function esc(str) {
+    return String(str ?? '')
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }

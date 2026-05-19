@@ -27,6 +27,7 @@
         </div>
     </div>
     <div class="topbar-right">
+        <span id="hwBadge" style="font-size:11px;font-weight:600;letter-spacing:0.5px;color:var(--warning)">○ Симуляция</span>
         <div class="topbar-info">
             <span id="clockDisplay">--:--:--</span>
         </div>
@@ -69,15 +70,15 @@
                 <div class="control-buttons">
                     <button class="ctrl-btn start" id="btnStart" onclick="controlAction('start')">
                         <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                        Старт
+                        <span class="btn-label">Старт</span>
                     </button>
                     <button class="ctrl-btn pause" id="btnPause" onclick="controlAction('pause')" disabled>
                         <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                        Пауза
+                        <span class="btn-label">Пауза</span>
                     </button>
                     <button class="ctrl-btn stop" id="btnStop" onclick="controlAction('stop')" disabled>
                         <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-                        Стоп
+                        <span class="btn-label">Стоп</span>
                     </button>
                 </div>
                 
@@ -104,16 +105,16 @@
             </div>
             <div class="panel-body">
                 <div class="preset-buttons" id="presetButtons">
-                    <button class="preset-btn" onclick="loadPreset('rough')">
+                    <button class="preset-btn" onclick="loadPreset('rough', this)">
                         <span class="preset-name">Грубый</span>
                     </button>
-                    <button class="preset-btn active" onclick="loadPreset('polish')">
+                    <button class="preset-btn active" onclick="loadPreset('polish', this)">
                         <span class="preset-name">Полировка</span>
                     </button>
-                    <button class="preset-btn" onclick="loadPreset('finish')">
+                    <button class="preset-btn" onclick="loadPreset('finish', this)">
                         <span class="preset-name">Финиш</span>
                     </button>
-                    <button class="preset-btn" onclick="loadPreset('mirror')">
+                    <button class="preset-btn" onclick="loadPreset('mirror', this)">
                         <span class="preset-name">Зеркало</span>
                     </button>
                 </div>
