@@ -11,6 +11,8 @@ from modules.machine import Machine
 from modules.process import ProcessManager
 from modules.system_info import get_system_info
 import logging
+import subprocess
+import os
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
@@ -118,10 +120,63 @@ def telemetry_loop():
         socketio.emit('telemetry', data)
 
 
+def flash_arduino_on_startup():
+    """Compile and upload `protokol_arduino` sketch using `arduino-cli` if enabled.
+
+    Uses values from `Config`: `ARDUINO_AUTO_FLASH`, `ARDUINO_CLI`, `ARDUINO_FQBN`, `ARDUINO_PORT`.
+    """
+    if not Config.ARDUINO_AUTO_FLASH:
+        return False
+
+    cli = Config.ARDUINO_CLI
+    fqbn = Config.ARDUINO_FQBN
+    port = Config.ARDUINO_PORT
+    sketch_dir = os.path.join(os.path.dirname(__file__), 'protokol_arduino')
+
+    logger.info(f"Auto-flash enabled: compiling sketch in {sketch_dir} using {cli}")
+    if not os.path.isdir(sketch_dir):
+        logger.warning("Sketch directory not found: %s", sketch_dir)
+        return False
+
+    # Compile
+    try:
+        r = subprocess.run([cli, 'compile', '--fqbn', fqbn, sketch_dir], capture_output=True, text=True)
+    except FileNotFoundError:
+        logger.warning("arduino-cli not found at '%s' — skipping auto-flash", cli)
+        return False
+
+    if r.returncode != 0:
+        logger.warning("arduino-cli compile failed: %s", r.stderr or r.stdout)
+        return False
+    logger.info("Compile success")
+
+    # Upload
+    upload_cmd = [cli, 'upload', '--fqbn', fqbn, sketch_dir]
+    if port:
+        upload_cmd = [cli, 'upload', '-p', port, '--fqbn', fqbn, sketch_dir]
+
+    r2 = subprocess.run(upload_cmd, capture_output=True, text=True)
+    if r2.returncode != 0:
+        logger.warning("arduino-cli upload failed: %s", r2.stderr or r2.stdout)
+        return False
+    logger.info("Upload success")
+    return True
+
+
 # **** ЗАПУСК ****
 
 if __name__ == '__main__':
     logger.info(f"EEP Control | {Config.MACHINE_NAME}")
     logger.info(f"http://{Config.HOST}:{Config.PORT}")
+    # Optionally flash Arduino sketch before starting the web interface
+    try:
+        flashed = flash_arduino_on_startup()
+        if flashed:
+            logger.info("Arduino sketch flashed successfully on startup")
+        else:
+            logger.info("Arduino auto-flash skipped or failed")
+    except Exception as e:
+        logger.warning("Error during Arduino auto-flash: %s", e)
+
     socketio.start_background_task(telemetry_loop)
     socketio.run(app, host=Config.HOST, port=Config.PORT, debug=Config.DEBUG, allow_unsafe_werkzeug=True)

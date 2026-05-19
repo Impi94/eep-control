@@ -14,3 +14,8 @@ class Config:
     MAX_VOLTAGE = float(os.getenv('MAX_VOLTAGE', 300))
     MAX_CURRENT = float(os.getenv('MAX_CURRENT', 50))
     MAX_PULSE_FREQ = int(os.getenv('MAX_PULSE_FREQ', 100000))
+    # Arduino auto-flash on startup (uses arduino-cli)
+    ARDUINO_AUTO_FLASH = os.getenv('ARDUINO_AUTO_FLASH', 'False').lower() == 'true'
+    ARDUINO_CLI = os.getenv('ARDUINO_CLI', 'arduino-cli')
+    ARDUINO_FQBN = os.getenv('ARDUINO_FQBN', 'arduino:avr:mega')
+    ARDUINO_PORT = os.getenv('ARDUINO_PORT', '')  # e.g. /dev/ttyACM0
