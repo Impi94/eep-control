@@ -81,6 +81,14 @@ def api_set_process():
     result = machine.set_process_params(request.json)
     return jsonify(result)
 
+@app.route('/api/simulation', methods=['POST'])
+def api_set_simulation():
+    data = request.json or {}
+    enable = bool(data.get('enable'))
+    result = machine.set_simulation(enable)
+    socketio.emit('state_update', machine.get_full_state())
+    return jsonify(result)
+
 @app.route('/api/preset/<name>', methods=['POST'])
 def api_load_preset(name):
     result = machine.load_preset(name)
@@ -116,4 +124,4 @@ if __name__ == '__main__':
     logger.info(f"EEP Control | {Config.MACHINE_NAME}")
     logger.info(f"http://{Config.HOST}:{Config.PORT}")
     socketio.start_background_task(telemetry_loop)
-    socketio.run(app, host=Config.HOST, port=Config.PORT, debug=Config.DEBUG)
+    socketio.run(app, host=Config.HOST, port=Config.PORT, debug=Config.DEBUG, allow_unsafe_werkzeug=True)

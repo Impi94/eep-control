@@ -109,6 +109,12 @@ function applyState(data) {
         hwBadge.textContent = isHw ? '● Железо' : '○ Симуляция';
         hwBadge.style.color = isHw ? 'var(--success)' : 'var(--warning)';
     }
+
+    const simToggle = document.getElementById('simulationToggle');
+    if (simToggle) {
+        simToggle.checked = Boolean(data.simulation_active);
+        simToggle.disabled = !Boolean(data.hw_connected);
+    }
 }
 
 // ── Системная информация RPi ─────────────────────────────────────────────────
@@ -259,6 +265,26 @@ function clearLog() {
         '<span class="log-time">--:--</span>' +
         '<span class="log-msg">Журнал очищен</span></div>';
     _lastLogTs = Date.now() / 1000;
+}
+
+async function toggleSimulation(enable) {
+    try {
+        const r = await fetch('/api/simulation', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ enable })
+        });
+        const res = await r.json();
+        if (!res.success) {
+            console.warn('[simulation]', res.error);
+            const checkbox = document.getElementById('simulationToggle');
+            if (checkbox) checkbox.checked = !enable;
+        }
+    } catch (e) {
+        console.error('[simulation] fetch error', e);
+        const checkbox = document.getElementById('simulationToggle');
+        if (checkbox) checkbox.checked = !enable;
+    }
 }
 
 // ── Часы ─────────────────────────────────────────────────────────────────────

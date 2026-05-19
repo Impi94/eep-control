@@ -243,6 +243,16 @@ class Machine:
         self._add_log(f"Параметры: V={self.pulse.voltage} I={self.pulse.current} Ton={self.pulse.pulse_on} Toff={self.pulse.pulse_off}")
         return {'success': True}
 
+    def set_simulation(self, enable: bool) -> dict:
+        if not self._hw:
+            return {'success': False, 'error': 'Arduino не подключена'}
+
+        if self._hw.set_simulation(enable):
+            self._add_log(f"Симуляция Arduino {'включена' if enable else 'выключена'}")
+            return {'success': True, 'simulation_active': enable}
+
+        return {'success': False, 'error': 'Ошибка при отправке флага симуляции'}
+
     def set_process_params(self, params: dict) -> dict:
         for key, value in params.items():
             if hasattr(self.process, key):
@@ -263,14 +273,15 @@ class Machine:
         if self.stats.start_time and self.state == MachineState.RUNNING:
             self.stats.elapsed_seconds = int(time.time() - self.stats.start_time)
         return {
-            'state':        self.state.value,
-            'pulse':        asdict(self.pulse),
-            'process':      asdict(self.process),
-            'sensors':      asdict(self.sensors),
-            'stats':        asdict(self.stats),
-            'errors':       self.errors[-10:],
-            'presets':      list(self.presets.keys()),
-            'hw_connected': self._hw is not None,
+            'state':             self.state.value,
+            'pulse':             asdict(self.pulse),
+            'process':           asdict(self.process),
+            'sensors':           asdict(self.sensors),
+            'stats':             asdict(self.stats),
+            'errors':            self.errors[-10:],
+            'presets':           list(self.presets.keys()),
+            'hw_connected':      self._hw is not None,
+            'simulation_active': self._hw.simulation_active if self._hw else False,
         }
 
     def get_log(self, limit: int = 50) -> list:
