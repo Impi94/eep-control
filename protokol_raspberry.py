@@ -44,7 +44,7 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
-# ━━ Константы протокола ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  Константы протокола 
 
 PKT_START = 0xAA
 PKT_MAX   = 32
@@ -100,7 +100,7 @@ ERROR_NAMES = {
 
 STATUS_NAMES = {0x00: "ok", 0x01: "error", 0x02: "not_present"}
 
-# ━━ Типы датчиков ЭЭП ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  Типы датчиков ЭЭП 
 SENSOR_TYPE_NAMES: dict[int, str] = {
     0x00: "None",
     0x01: "Gap Voltage",    # напряжение на зазоре
@@ -125,7 +125,7 @@ SENSOR_UNITS: dict[int, str] = {
     0x05: "г",
 }
 
-# ━━ Типы устройств ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  Типы устройств 
 DEVICE_TYPE_NAMES: dict[int, str] = {
     0x00: "None",
     0x01: "Relay",
@@ -138,14 +138,14 @@ DEVICE_UNITS: dict[int, str] = {
     0x03: "",
 }
 
-# ━━ Идентификаторы устройств (фиксированные, совпадают с Arduino) ━━━━━━━━━
+#  Идентификаторы устройств (фиксированные, совпадают с Arduino) 
 DEV_RELAY_MAIN = 0   # силовое реле разрядной цепи
 DEV_RELAY_GEN  = 1   # реле генератора импульсов
 DEV_VIBRO      = 2   # вибропривод (ШИМ 0..255)
 DEV_FAN        = 3   # вентилятор охлаждения (ШИМ 0..255)
 
 
-# ━━ Утилиты пакета ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  Утилиты пакета 
 
 def _crc8(data: list[int]) -> int:
     crc = 0
@@ -208,7 +208,7 @@ def _parse_devices(data: list[int]) -> list[dict]:
     return result
 
 
-# ━━ Основной класс ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  Основной класс 
 
 class EEPMachine:
     """
@@ -231,7 +231,7 @@ class EEPMachine:
     def __exit__(self, *_):
         self.close()
 
-    # ── Низкоуровневый I2C ───────────────────────────────────────────────
+    #  Низкоуровневый I2C 
 
     def _write(self, packet: list[int]) -> bool:
         try:
@@ -269,7 +269,7 @@ class EEPMachine:
     def _ok(self, resp: Optional[dict]) -> bool:
         return resp is not None and resp["type"] == RESP_ACK
 
-    # ── Общие команды ────────────────────────────────────────────────────
+    #  Общие команды 
 
     def check_connection(self) -> bool:
         """Проверка связи с Arduino. Бросает RuntimeError если нет ответа."""
@@ -314,7 +314,7 @@ class EEPMachine:
             return True
         return False
 
-    # ── Датчики ──────────────────────────────────────────────────────────
+    #  Датчики 
 
     def get_all_sensors(self) -> Optional[list[dict]]:
         """Запрос всех датчиков. В режиме SIM возвращает симулированные данные."""
@@ -494,10 +494,6 @@ class EEPMachine:
         """
         Установить целевое напряжение зазора для gap tracking (Вольты).
 
-        В процессе ЭЭП типичное U открытого зазора: 60..120В.
-        Целевое U во время разряда: ~40..60% от Uxx (например, 50В при Uxx=100В).
-        Рекомендуемый диапазон: 20..80В.
-
         Пример: m.set_gap_target(50.0)  # 50В
         """
         raw = max(0, min(32767, int(voltage_v * 10)))
@@ -554,7 +550,7 @@ class EEPMachine:
             self._mode &= ~(MODE_AUTO_GAP | MODE_CYCLE)
         return ok
 
-    # ── Мониторинг процесса ──────────────────────────────────────────────
+    # Мониторинг процесса 
 
     def get_process_snapshot(self) -> Optional[dict]:
         """
@@ -635,7 +631,7 @@ class EEPMachine:
                     print(f"[{_ts()}] ⚠ ТОК: {snap['current_ma']:.0f}мА")
 
                 if snap["estop"]:
-                    print(f"[{_ts()}] ⛔ E-STOP активен — мониторинг остановлен")
+                    print(f"[{_ts()}] E-STOP активен — мониторинг остановлен")
                     break
 
                 if not snap["cycle_on"] and duration_s == 0:
@@ -655,8 +651,7 @@ class EEPMachine:
         """Синоним monitor() без таймаута — для обратной совместимости."""
         self.monitor(duration_s=0, interval_s=interval, callback=callback)
 
-
-# ━━ Форматированный вывод ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  Форматированный вывод 
 
 def _ts() -> str:
     return time.strftime("%H:%M:%S")
@@ -684,10 +679,10 @@ def _print_snapshot(snap: dict) -> None:
     print(f"  Усилие:       {f'{frc} г':>8}" if frc is not None else "  Усилие:       н/д")
     print(f"  Ось Z:        {f'{pos} шаг':>8}  {'⚙ движение' if snap.get('step_run') else '⏸ стоп'}" if pos is not None else "  Ось Z:        н/д")
     if snap.get("estop"):
-        print(f"  ⛔ E-STOP АКТИВЕН")
+        print(f"E-STOP АКТИВЕН")
 
 
-# ━━ Точка входа (демо) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ━━ Точка входа (демо)
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -709,48 +704,11 @@ if __name__ == "__main__":
             print(f"Режим: {st['mode_str']}")
             print(f"Датчиков: {st['num_sensors']}  Устройств: {st['num_devices']}\n")
 
-        # 3. Демо через симуляцию ─────────────────────────────────────────
-        print("Включаем симуляцию ЭЭП-процесса...")
-        m.set_simulation(True)
-
-        # Параметры импульсов
-        m.set_pulse_params(freq_hz=2000, duty_pct=40, level=128)
-        pp = m.get_pulse_params()
-        if pp:
-            print(f"Импульсы: {pp['freq_hz']} Гц, скважность {pp['duty_pct']}%, "
-                  f"уровень {pp['level']}, U_цель={pp['gap_target_v']}В")
-
-        # Целевое напряжение зазора
-        m.set_gap_target(50.0)  # 50В
-
-        # Вибропривод
-        m.set_vibration(128)
-        m.set_fan(80)
-
-        # Один снимок
+        # 3. Снимок состояния (ничего не запускаем — ждём команды из веб-интерфейса)
         snap = m.get_process_snapshot()
         if snap:
             _print_snapshot(snap)
 
-        # 4. Мониторинг симулированного процесса (бесконечно, Ctrl+C для остановки)
-        print("\nМониторинг симуляции (Ctrl+C для остановки):")
-        m.monitor(duration_s=0, interval_s=1.0)
-
-        # 5. Выключить симуляцию
-        m.set_simulation(False)
-        m.set_vibration(0)
-        m.set_fan(0)
-        print("\nСимуляция выключена.")
-
-        # 6. Демо шагового (без реального подключения пинов)
-        print("\nДемо команд шагового двигателя:")
-        print(f"  step_enable(True):  {m.step_enable(True)}")
-        print(f"  step_move(-500):    {m.step_move(-500, speed=200)}  (подача 500 шагов)")
-        st_r = m.get_stepper_status()
-        if st_r:
-            print(f"  позиция={st_r['position']}, running={st_r['running']}")
-        print(f"  step_stop():        {m.step_stop()}")
-        print(f"  step_home():        {m.step_home()}")
-        print(f"  step_enable(False): {m.step_enable(False)}")
-
-        print("\nГотово.")
+        print("\nСтанок готов. Управление — через веб-интерфейс (app.py).")
+        print("Для прямого мониторинга: m.monitor()")
+        print("Для аварийной остановки: m.estop()\n")

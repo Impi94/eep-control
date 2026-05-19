@@ -2,7 +2,7 @@
 
 const socket = io();
 let currentState = 'idle';
-let _sliderDragging = false;
+let _paramsDirty = false;   // true пока пользователь не нажал «Применить»
 let _lastLogTs = 0;
 
 // ── WebSocket ────────────────────────────────────────────────────────────────
@@ -96,8 +96,8 @@ function applyState(data) {
         setText('progressPercent', pct.toFixed(1) + '%');
     }
 
-    // Синхронизация слайдеров с сервером (пока не тащим)
-    if (data.pulse && !_sliderDragging) syncSliders(data.pulse);
+    // Синхронизация слайдеров с сервером (пока пользователь не редактирует)
+    if (data.pulse && !_paramsDirty) syncSliders(data.pulse);
 
     // Ошибки
     if (Array.isArray(data.errors)) updateErrors(data.errors);
@@ -187,11 +187,9 @@ const SLIDER_DEFS = {
 };
 
 function updateParam(param, rawValue) {
-    _sliderDragging = true;
+    _paramsDirty = true;
     const def = SLIDER_DEFS[param];
     if (def) setText(def.displayId, parseFloat(rawValue) + def.suffix);
-    clearTimeout(updateParam._t);
-    updateParam._t = setTimeout(() => { _sliderDragging = false; }, 600);
 }
 
 async function applyPulseParams() {
@@ -201,11 +199,13 @@ async function applyPulseParams() {
         pulse_on:  parseFloat(document.getElementById('pulseOnSlider').value),
         pulse_off: parseFloat(document.getElementById('pulseOffSlider').value),
     };
-    await fetch('/api/params/pulse', {
+    const r = await fetch('/api/params/pulse', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(params)
     });
+    const res = await r.json();
+    if (res.success) _paramsDirty = false;
 }
 
 function syncSliders(pulse) {
@@ -228,6 +228,7 @@ async function loadPreset(name, btn) {
     const r = await fetch('/api/preset/' + name, { method: 'POST' });
     const res = await r.json();
     if (res.success) {
+        _paramsDirty = false;   // пресет применён — разрешаем синхронизацию слайдеров
         document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
         if (btn) btn.classList.add('active');
     }
