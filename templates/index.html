@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ machine_name }} — EEP Control</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+
+<!-- ===== ВЕРХНЯЯ ПАНЕЛЬ ===== -->
+<header class="topbar">
+    <div class="topbar-left">
+        <div class="logo">
+            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            <span class="logo-text">{{ machine_name }}</span>
+        </div>
+        <span class="topbar-subtitle">Электроэрозионная полировка</span>
+    </div>
+    <div class="topbar-center">
+        <div class="state-badge" id="stateBadge">
+            <span class="state-dot"></span>
+            <span class="state-text">Инициализация...</span>
+        </div>
+    </div>
+    <div class="topbar-right">
+        <div class="topbar-info">
+            <span id="clockDisplay">--:--:--</span>
+        </div>
+        <div class="topbar-info">
+            <span class="label">CPU</span>
+            <span id="sysCpu">--%</span>
+        </div>
+        <div class="topbar-info">
+            <span class="label">Pi</span>
+            <span id="sysTemp">--°C</span>
+        </div>
+        <div class="connection-indicator" id="connIndicator" title="WebSocket">
+            <span class="conn-dot"></span>
+        </div>
+    </div>
+</header>
+
+<!-- ===== АВАРИЙНАЯ КНОПКА ===== -->
+<button class="emergency-btn" id="emergencyBtn" onclick="emergencyStop()" title="АВАРИЙНАЯ ОСТАНОВКА">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="8" y1="8" x2="16" y2="16"/>
+        <line x1="16" y1="8" x2="8" y2="16"/>
+    </svg>
+    <span>E-STOP</span>
+</button>
+
+<!-- ===== ОСНОВНОЙ КОНТЕНТ ===== -->
+<div class="layout">
+    
+    <!-- ЛЕВАЯ КОЛОНКА: Управление -->
+    <aside class="sidebar">
+        
+        <!-- Управление процессом -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3>Управление</h3>
+            </div>
+            <div class="panel-body">
+                <div class="control-buttons">
+                    <button class="ctrl-btn start" id="btnStart" onclick="controlAction('start')">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        Старт
+                    </button>
+                    <button class="ctrl-btn pause" id="btnPause" onclick="controlAction('pause')" disabled>
+                        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                        Пауза
+                    </button>
+                    <button class="ctrl-btn stop" id="btnStop" onclick="controlAction('stop')" disabled>
+                        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                        Стоп
+                    </button>
+                </div>
+                
+                <!-- Прогресс -->
+                <div class="progress-section">
+                    <div class="progress-header">
+                        <span>Прогресс</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <div class="progress-time">
+                        <span>Время: <strong id="elapsedTime">00:00:00</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Пресеты -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3>Режимы</h3>
+            </div>
+            <div class="panel-body">
+                <div class="preset-buttons" id="presetButtons">
+                    <button class="preset-btn" onclick="loadPreset('rough')">
+                        <span class="preset-name">Грубый</span>
+                    </button>
+                    <button class="preset-btn active" onclick="loadPreset('polish')">
+                        <span class="preset-name">Полировка</span>
+                    </button>
+                    <button class="preset-btn" onclick="loadPreset('finish')">
+                        <span class="preset-name">Финиш</span>
+                    </button>
+                    <button class="preset-btn" onclick="loadPreset('mirror')">
+                        <span class="preset-name">Зеркало</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Параметры импульсов -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3>Параметры импульсов</h3>
+            </div>
+            <div class="panel-body">
+                <div class="param-group">
+                    <label class="param-label">
+                        <span>Напряжение</span>
+                        <span class="param-value" id="voltageDisplay">80 В</span>
+                    </label>
+                    <input type="range" class="param-slider" id="voltageSlider" 
+                           min="5" max="300" value="80" step="5"
+                           oninput="updateParam('voltage', this.value)">
+                </div>
+                <div class="param-group">
+                    <label class="param-label">
+                        <span>Ток</span>
+                        <span class="param-value" id="currentDisplay">10 А</span>
+                    </label>
+                    <input type="range" class="param-slider" id="currentSlider" 
+                           min="0.5" max="50" value="10" step="0.5"
+                           oninput="updateParam('current', this.value)">
+                </div>
+                <div class="param-group">
+                    <label class="param-label">
+                        <span>T<sub>on</sub></span>
+                        <span class="param-value" id="pulseOnDisplay">50 мкс</span>
+                    </label>
+                    <input type="range" class="param-slider" id="pulseOnSlider" 
+                           min="1" max="500" value="50" step="1"
+                           oninput="updateParam('pulse_on', this.value)">
+                </div>
+                <div class="param-group">
+                    <label class="param-label">
+                        <span>T<sub>off</sub></span>
+                        <span class="param-value" id="pulseOffDisplay">50 мкс</span>
+                    </label>
+                    <input type="range" class="param-slider" id="pulseOffSlider" 
+                           min="1" max="500" value="50" step="1"
+                           oninput="updateParam('pulse_off', this.value)">
+                </div>
+                <button class="btn-apply" onclick="applyPulseParams()">Применить</button>
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- ЦЕНТРАЛЬНАЯ ОБЛАСТЬ: Мониторинг -->
+    <main class="main-content">
+        
+        <!-- Ряд главных показателей -->
+        <div class="gauges-row">
+            <div class="gauge-card primary">
+                <div class="gauge-label">Напряжение</div>
+                <div class="gauge-value">
+                    <span id="vActual">0.0</span>
+                    <span class="gauge-unit">В</span>
+                </div>
+                <div class="gauge-bar-wrap">
+                    <div class="gauge-bar voltage" id="vBar"></div>
+                </div>
+                <div class="gauge-target">Цель: <span id="vTarget">80</span> В</div>
+            </div>
+            <div class="gauge-card primary">
+                <div class="gauge-label">Ток</div>
+                <div class="gauge-value">
+                    <span id="iActual">0.0</span>
+                    <span class="gauge-unit">А</span>
+                </div>
+                <div class="gauge-bar-wrap">
+                    <div class="gauge-bar current" id="iBar"></div>
+                </div>
+                <div class="gauge-target">Цель: <span id="iTarget">10</span> А</div>
+            </div>
+            <div class="gauge-card">
+                <div class="gauge-label">Зазор</div>
+                <div class="gauge-value">
+                    <span id="gapActual">0.000</span>
+                    <span class="gauge-unit">мм</span>
+                </div>
+                <div class="gauge-bar-wrap">
+                    <div class="gauge-bar gap" id="gapBar"></div>
+                </div>
+                <div class="gauge-target">Цель: <span id="gapTarget">0.1</span> мм</div>
+            </div>
+            <div class="gauge-card">
+                <div class="gauge-label">T электролита</div>
+                <div class="gauge-value">
+                    <span id="elTemp">22.0</span>
+                    <span class="gauge-unit">°C</span>
+                </div>
+                <div class="gauge-bar-wrap">
+                    <div class="gauge-bar temp" id="elTempBar"></div>
+                </div>
+                <div class="gauge-target">Макс: 45 °C</div>
+            </div>
+        </div>
+
+        <!-- Вторичные параметры -->
+        <div class="metrics-grid">
+            <div class="metric-tile">
+                <div class="metric-data">
+                    <span class="metric-val" id="flowRate">0.0</span>
+                    <span class="metric-label">Расход, л/мин</span>
+                </div>
+            </div>
+            <div class="metric-tile">
+                <div class="metric-data">
+                    <span class="metric-val" id="conductivity">0.0</span>
+                    <span class="metric-label">Проводимость, мСм</span>
+                </div>
+            </div>
+            <div class="metric-tile">
+               <div class="metric-data">
+                    <span class="metric-val" id="vibration">0.00</span>
+                    <span class="metric-label">Вибрация, мм/с</span>
+                </div>
+            </div>
+            <div class="metric-tile">
+                <div class="metric-data">
+                    <span class="metric-val" id="tankLevel">85</span>
+                    <span class="metric-label">Уровень бака, %</span>
+                </div>
+            </div>
+            <div class="metric-tile">
+                <div class="metric-data">
+                    <span class="metric-val" id="electrodeWear">0.00</span>
+                    <span class="metric-label">Износ электрода, %</span>
+                </div>
+            </div>
+            <div class="metric-tile">
+                <div class="metric-data">
+                    <span class="metric-val" id="energyConsumed">0.0</span>
+                    <span class="metric-label">Энергия, Вт·ч</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Статистика процесса -->
+        <div class="panel stats-panel">
+            <div class="panel-header">
+                <h3>Статистика процесса</h3>
+            </div>
+            <div class="panel-body">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Импульсов</span>
+                        <span class="stat-value" id="pulseCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Снято материала</span>
+                        <span class="stat-value"><span id="materialRemoved">0.00</span> мг</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">К.З.</span>
+                        <span class="stat-value warn" id="shortCircuits">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Дуги</span>
+                        <span class="stat-value warn" id="arcCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">КПД</span>
+                        <span class="stat-value" id="efficiency">0 %</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Режим</span>
+                        <span class="stat-value" id="currentMode">polish</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ПРАВАЯ КОЛОНКА: Лог -->
+    <aside class="sidebar-right">
+        <div class="panel log-panel">
+            <div class="panel-header">
+                <h3>Журнал</h3>
+                <button class="btn-small" onclick="clearLog()">Очистить</button>
+            </div>
+            <div class="panel-body">
+                <div class="log-container" id="logContainer">
+                    <div class="log-entry info">
+                        <span class="log-time">--:--:--</span>
+                        <span class="log-msg">Ожидание подключения...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ошибки -->
+        <div class="panel errors-panel">
+            <div class="panel-header">
+                <h3>Ошибки</h3>
+                <button class="btn-small danger" onclick="resetErrors()">Сбросить</button>
+            </div>
+            <div class="panel-body">
+                <div class="errors-container" id="errorsContainer">
+                    <div class="no-errors">Ошибок нет</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
