@@ -45,16 +45,6 @@
     </div>
 </header>
 
-<!-- ===== АВАРИЙНАЯ КНОПКА ===== -->
-<button class="emergency-btn" id="emergencyBtn" onclick="emergencyStop()" title="АВАРИЙНАЯ ОСТАНОВКА">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="8" y1="8" x2="16" y2="16"/>
-        <line x1="16" y1="8" x2="8" y2="16"/>
-    </svg>
-    <span>E-STOP</span>
-</button>
-
 <!-- ===== ОСНОВНОЙ КОНТЕНТ ===== -->
 <div class="layout">
     
@@ -294,6 +284,19 @@
                 </div>
             </div>
         </div>
+
+        <!-- Аварийная остановка -->
+        <button class="estop-block" onclick="emergencyStop()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28" height="28">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="8" y1="8" x2="16" y2="16"/>
+                <line x1="16" y1="8" x2="8" y2="16"/>
+            </svg>
+            <div class="estop-text">
+                <span class="estop-title">АВАРИЙНАЯ ОСТАНОВКА</span>
+                <span class="estop-hint">E-STOP — немедленно выключить всё</span>
+            </div>
+        </button>
 
     </main>
 

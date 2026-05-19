@@ -176,46 +176,50 @@ body {
 .conn-dot.disconnected { background: var(--danger); }
 
 
-/* ============ АВАРИЙНАЯ КНОПКА ============ */
-.emergency-btn {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 200;
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: var(--danger);
-    border: 4px solid #ff8a80;
-    color: white;
-    cursor: pointer;
+/* ============ АВАРИЙНАЯ ОСТАНОВКА (блок) ============ */
+.estop-block {
+    width: 100%;
+    height: 72px;
+    flex-shrink: 0;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    box-shadow: 0 4px 20px rgba(239, 83, 80, 0.5);
+    gap: 16px;
+    background: var(--danger-dim);
+    border: 2px solid var(--danger);
+    border-radius: var(--radius-lg);
+    color: var(--danger);
+    cursor: pointer;
     transition: var(--transition);
 }
 
-.emergency-btn svg {
-    width: 28px;
-    height: 28px;
+.estop-block:hover {
+    background: var(--danger);
+    color: #fff;
+    box-shadow: 0 0 24px rgba(239, 83, 80, 0.45);
 }
 
-.emergency-btn span {
-    font-size: 9px;
+.estop-block:active {
+    transform: scale(0.98);
+}
+
+.estop-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+.estop-title {
+    font-size: 15px;
     font-weight: 800;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
 }
 
-.emergency-btn:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 30px rgba(239, 83, 80, 0.7);
-}
-
-.emergency-btn:active {
-    transform: scale(0.95);
+.estop-hint {
+    font-size: 11px;
+    opacity: 0.75;
+    font-weight: 400;
 }
 
 
