@@ -8,11 +8,15 @@ import time
 import threading
 import random
 import logging
+import subprocess
 from enum import Enum
 from dataclasses import dataclass, asdict
+from pathlib import Path
 from typing import Optional, List
 
 logger = logging.getLogger(__name__)
+
+_SKETCH_DIR = Path(__file__).parent.parent / 'protokol_arduino'
 
 # Пытаемся подключить модуль протокола (требует smbus2 на RPi)
 try:
@@ -109,8 +113,47 @@ class Machine:
         self._running = False
         self._loop_thread: Optional[threading.Thread] = None
 
+        self._flash_arduino()
         self._try_connect_hw()
         self._add_log("Станок инициализирован", "info")
+
+    # ── Прошивка Arduino ────────────────────────────────────────────────────
+
+    def _flash_arduino(self):
+        from config import Config
+        if not Config.ARDUINO_AUTO_FLASH:
+            return
+
+        port  = Config.ARDUINO_PORT or '/dev/ttyUSB0'
+        fqbn  = Config.ARDUINO_FQBN
+        cli   = Config.ARDUINO_CLI
+        sketch = str(_SKETCH_DIR)
+
+        logger.info(f"Прошивка Arduino: порт={port} fqbn={fqbn}")
+        self._add_log(f"Прошивка Arduino ({port})…", "info")
+
+        try:
+            result = subprocess.run(
+                [cli, 'compile', '--upload', '-p', port, '--fqbn', fqbn, sketch],
+                capture_output=True, text=True, timeout=90
+            )
+            if result.returncode == 0:
+                logger.info("Прошивка успешна, ждём загрузку Arduino…")
+                self._add_log("Прошивка успешна, ожидание запуска…", "info")
+                time.sleep(3)  # Arduino перезагружается после прошивки
+            else:
+                err = result.stderr.strip() or result.stdout.strip()
+                logger.error(f"Ошибка прошивки: {err}")
+                self._add_log(f"Ошибка прошивки: {err}", "error")
+        except FileNotFoundError:
+            logger.error(f"arduino-cli не найден: '{cli}'. Установите: https://arduino.github.io/arduino-cli/")
+            self._add_log("arduino-cli не найден", "error")
+        except subprocess.TimeoutExpired:
+            logger.error("Таймаут прошивки (>90 с)")
+            self._add_log("Таймаут прошивки", "error")
+        except Exception as e:
+            logger.error(f"Прошивка: {e}")
+            self._add_log(f"Прошивка: {e}", "error")
 
     # ── Подключение к железу ────────────────────────────────────────────────
 
