@@ -1,20 +1,11 @@
 /*
  * protokol_arduino.ino
- *
  * I2C Slave — станок электро-эрозионной полировки (ЭЭП) в сухом электролите
  * Arduino Mega (слейв) ↔ Raspberry Pi 5 (мастер)
- *
- * ── Подключение ───────────────────────────────────────────────────────────
- *   Arduino Mega pin 20 (SDA) ─► level shifter ─► RPi pin 3 (GPIO 2, SDA)
- *   Arduino Mega pin 21 (SCL) ─► level shifter ─► RPi pin 5 (GPIO 3, SCL)
- *   GND ────────────────────────────────────────── RPi pin 6 (GND)
- *   ВАЖНО: Arduino 5V логика, RPi 3.3V → обязателен level shifter!
- *   Подтяжки 4.7 кОм SDA/SCL к 3.3V со стороны RPi.
- *
  * ── Формат пакета (макс. 32 байта) ───────────────────────────────────────
  *   [0xAA][CMD][LEN][DATA_0..DATA_N][CRC8]
  *   CRC8 = XOR(CMD ^ LEN ^ DATA_0 ^ ... ^ DATA_N)
- *
+ * 
  * ── Команды (RPi → Arduino) ──────────────────────────────────────────────
  *  Общие:
  *   0x01 CMD_PING         — проверка связи                       → ACK
